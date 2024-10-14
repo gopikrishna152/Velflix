@@ -1,0 +1,28 @@
+# Stage 1: Build Stage
+FROM node:14.19.1 AS builder
+
+WORKDIR /app
+
+COPY package.json ./
+COPY package-lock.json ./
+
+RUN npm install has
+RUN npm install -D vite
+
+COPY . .
+
+# Build the application and ensure the manifest is generated
+RUN npm run build && ls -al public/build
+
+# Stage 2: Production Stage
+FROM node:14.19.1-slim
+
+WORKDIR /app
+
+COPY --from=builder /app .
+
+RUN npm install --only=production
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev", "--", "--host"]
