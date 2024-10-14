@@ -1,0 +1,19 @@
+# Use an official PHP runtime as a parent image
+FROM php:8.1
+
+# Set the working directory
+WORKDIR /app
+
+# Install PHP extensions and composer
+RUN apt-get update && apt-get install -y curl git unzip libpq-dev libzip-dev \
+    && docker-php-ext-install pdo pdo_mysql zip \
+    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Install dependencies
+RUN composer install
+
+# Run migrations and seeder commands only after MySQL is accessible
+CMD bash -c "until php artisan migrate; do echo 'Waiting for MySQL to be ready...'; sleep 3; done && php artisan key:generate && php artisan db:seed && php artisan serve --host=0.0.0.0 --port=8000"
